@@ -9,12 +9,12 @@ ARG USER_GID=$USER_UID
 # Switch to root to install packages
 USER root
 
-# Install necessary packages including X11 and Qt dependencies
+## Install necessary packages including X11 and Qt dependencies
 RUN apt-get update && apt-get install -y \
     sudo \
     python3-pip \
     ros-humble-desktop \
-    ros-humble-gz \
+    ros-humble-gazebo-ros-pkgs \
     ros-humble-cartographer \
     ros-humble-cartographer-ros \
     ros-humble-navigation2 \
