@@ -2,7 +2,7 @@
 FROM ros:humble
 
 # Set arguments for the user creation
-ARG USERNAME=user
+ARG USERNAME=krish
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
@@ -49,6 +49,9 @@ WORKDIR /home/$USERNAME
 # Source ROS environment in .bashrc and set up TurtleBot3 simulation setup
 RUN echo "source /opt/ros/humble/setup.bash" >> /home/$USERNAME/.bashrc \
     && echo "export TURTLEBOT3_MODEL=\$TURTLEBOT3_MODEL" >> /home/$USERNAME/.bashrc
+
+# Create a ROS workspace directory
+RUN mkdir -p /home/$USERNAME/ros2_ws/src
 
 # Switch to the new user
 USER $USERNAME
