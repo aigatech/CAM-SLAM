@@ -1,60 +1,68 @@
+
 # Use the official ROS Humble base image
 FROM ros:humble
+# Update apt sources to use Tsinghua mirrors
+RUN sed -i 's/ports\.ubuntu\.com/mirrors\.tuna\.tsinghua\.edu\.cn/g' /etc/apt/sources.list && \
+    sed -i 's/packages\.ros\.org/mirrors\.tuna\.tsinghua\.edu\.cn/g' /etc/apt/sources.list.d/ros2-latest.list
+# Install necessary packages
 
-# Set arguments for the user creation
-ARG USERNAME=krish
-ARG USER_UID=1000
-ARG USER_GID=$USER_UID
-
-# Switch to root to install packages
-USER root
-
-# Install necessary packages including X11 and Qt dependencies
 RUN apt-get update && apt-get install -y \
+    iputils-ping \
+    net-tools \
+    wget \
     sudo \
     python3-pip \
+    mesa-utils \
+    mesa-utils-extra \
     ros-humble-desktop \
-    ros-humble-gazebo-* \
     ros-humble-cartographer \
     ros-humble-cartographer-ros \
     ros-humble-navigation2 \
     ros-humble-nav2-bringup \
     ros-humble-turtlebot3* \
-    libxcb-xinerama0 \
-    x11-apps \
-    libgl1-mesa-glx \
-    libqt5gui5 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create the user
-RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
-    && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME
-
-# Set the default shell
-ENV SHELL /bin/bash
-
-# Set environment variables for GUI support
-ENV DISPLAY=:0
-ENV QT_X11_NO_MITSHM=1
-ENV XDG_RUNTIME_DIR=/tmp/runtime-$USERNAME
-
-# Set TurtleBot3 model environment variable
-ENV TURTLEBOT3_MODEL=burger 
-
-# Set the working directory
-WORKDIR /home/$USERNAME
-
-# Source ROS environment in .bashrc and set up TurtleBot3 simulation setup
-RUN echo "source /opt/ros/humble/setup.bash" >> /home/$USERNAME/.bashrc \
-    && echo "export TURTLEBOT3_MODEL=\$TURTLEBOT3_MODEL" >> /home/$USERNAME/.bashrc
-
-# Create a ROS workspace directory
-RUN mkdir -p /home/$USERNAME/ros2_ws/src
-
-# Switch to the new user
-USER $USERNAME
-
+    #ros-humble-gazebo-* \
+    ros-humble-rviz2 \
+    bash \
+    fluxbox \
+    git \
+    novnc \
+    supervisor \
+    x11vnc \
+    xterm \
+    xvfb && \
+    rm -rf /var/lib/apt/lists/*
+# Create a workspace
+RUN mkdir -p /root/catkin_ws
+WORKDIR /root/catkin_ws
+# Source ROS environment
+RUN echo "source /opt/ros/humble/setup.bash" >> /root/.bashrc
+# Set environment variables
+ENV HOME=/root \
+    DEBIAN_FRONTEND=noninteractive \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    DISPLAY=:0.0 \
+    DISPLAY_WIDTH=1024 \
+    DISPLAY_HEIGHT=768 \
+    RUN_XTERM=yes \
+    RUN_FLUXBOX=yes \
+    ROS_MASTER_URI=http://172.16.0.240:11311 \
+    ROS_HOSTNAME=ros
+# Copy application files
+COPY . /app
 # Set the default command
-CMD ["/bin/bash"]
+CMD ["/app/entrypoint.sh"]
+# Expose port
+EXPOSE 8080
+
+
+RUN apt-get update && apt-get install -y lsb-release wget gnupg
+
+RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
+
+RUN apt-get update && apt-get install -y  \
+    ignition-fortress \
+    ros-humble-ros-gz
